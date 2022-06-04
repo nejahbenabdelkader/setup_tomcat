@@ -1,0 +1,35 @@
+- hosts: all
+  become: true
+  vars:
+    tomcat_version: 9.0.63
+
+    tomcat_permissions_production: True
+
+    tomcat_users:
+      - username: "tomcat"
+        password: "t3mpp@ssw0rd"
+        roles: "tomcat,admin,manager,manager-gui"
+      - username: "exampleuser"
+        password: "us3rp@ssw0rd"
+        roles: "tomcat"
+  roles:
+    - role: zaxos.tomcat-ansible-role
+  tasks:
+    - name: configure max heap JVM as DEV
+      lineinfile:
+        path: /opt/tomcat/bin/setenv.sh
+        regexp: CATALINA_OPTS="-Xms512M -Xmx512M  "
+        line:  CATALINA_OPTS="-Xms256M -Xmx256M "
+        state: present
+      when: env == "DEV"
+    - name: configure max heap JVM as PROD
+      lineinfile:
+        path: /opt/tomcat/bin/setenv.sh
+        regexp: CATALINA_OPTS="-Xms256M -Xmx256M "
+        line:  CATALINA_OPTS="-Xms512M -Xmx512M "
+        state: present
+      when: env == "PROD"
+    - name: deploy war file
+      copy:
+        src: ~/setup_tomcat/sample.war
+        dest: /opt/tomcat/webapps/
